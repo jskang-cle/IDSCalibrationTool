@@ -1,0 +1,59 @@
+﻿<UserControl x:Class="IDSCalibrationTool.Controls.CharucoParamView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:IDSCalibrationTool.Controls" 
+             xmlns:models="clr-namespace:IDSCalibrationTool.Models" 
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" 
+             xmlns:converters="clr-namespace:IDSCalibrationTool.Converters"
+             d:DataContext="{d:DesignInstance Type=models:CharucoParams, IsDesignTimeCreatable=True}"
+             mc:Ignorable="d" 
+             ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+             d:DesignHeight="450" d:DesignWidth="300">
+    <Grid>
+        <Grid.Resources>
+            <Style TargetType="{x:Type ui:TextBlock}">
+                <Setter Property="Margin" Value="5" />
+            </Style>
+            <Style TargetType="{x:Type ui:TextBox}" BasedOn="{StaticResource {x:Type ui:TextBox}}">
+                <Setter Property="Margin" Value="3" />
+            </Style>
+            <Style TargetType="{x:Type ui:NumberBox}" BasedOn="{StaticResource {x:Type ui:NumberBox}}">
+                <Setter Property="Margin" Value="3" />
+            </Style>
+        </Grid.Resources>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <ui:TextBlock Grid.Column="0" Text="Square size (mm)" FontTypography="Body" VerticalAlignment="Center" />
+        <ui:TextBox Grid.Column="1" Text="{Binding SquareLength}"  />
+
+        <ui:TextBlock Grid.Row="1" Grid.Column="0" Text="Marker size (mm)" FontTypography="Body" VerticalAlignment="Center" />
+        <ui:TextBox Grid.Row="1" Grid.Column="1" Text="{Binding MarkerLength}" />
+
+        <ui:TextBlock Grid.Row="2" Grid.Column="0" Text="Squares X" FontTypography="Body" VerticalAlignment="Center" />
+        <ui:NumberBox Grid.Row="2" Grid.Column="1" Value="{Binding SquaresX}" Minimum="3" ValidationMode="InvalidInputOverwritten" ClearButtonEnabled="False" />
+
+        <ui:TextBlock Grid.Row="3" Grid.Column="0" Text="Squares Y" FontTypography="Body" VerticalAlignment="Center" />
+        <ui:NumberBox Grid.Row="3" Grid.Column="1" Value="{Binding SquaresY}" Minimum="3" ValidationMode="InvalidInputOverwritten" ClearButtonEnabled="False" />
+
+        <ui:TextBlock Grid.Row="4" Grid.Column="0" Text="Marker count" FontTypography="Body" VerticalAlignment="Center" />
+        <ui:TextBox Grid.Row="4" Grid.Column="1" Text="{Binding MarkerCount, Mode=OneWay}" IsEnabled="False" />
+
+        <ui:TextBlock Grid.Row="5" Grid.Column="0" Text="Dictionary" FontTypography="Body" VerticalAlignment="Center" />
+        <ComboBox Grid.Row="5" Grid.Column="1" Margin="3" HorizontalAlignment="Stretch"
+          ItemsSource="{Binding DictionaryName, 
+                        Converter={converters:EnumToCollectionConverter}}"
+          SelectedItem="{Binding DictionaryName}" />
+    </Grid>
+</UserControl>

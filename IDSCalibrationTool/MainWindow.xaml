@@ -1,0 +1,235 @@
+﻿<ui:FluentWindow 
+    x:Class="IDSCalibrationTool.MainWindow"
+    x:Name="MainWindowElement"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:models="clr-namespace:IDSCalibrationTool.Models"
+    xmlns:local="clr-namespace:IDSCalibrationTool" 
+    xmlns:System="clr-namespace:System;assembly=mscorlib"
+    xmlns:aruco="clr-namespace:Emgu.CV.Aruco;assembly=Emgu.CV" 
+    xmlns:converters="clr-namespace:IDSCalibrationTool.Converters" 
+    xmlns:controls="clr-namespace:IDSCalibrationTool.Controls"
+    d:DataContext="{d:DesignInstance Type=local:MainWindowViewModel, IsDesignTimeCreatable=True}"
+    mc:Ignorable="d"
+    ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
+    ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+    WindowStartupLocation="CenterScreen"
+    Title="{Binding Title}" Height="900" Width="1600">
+    <ui:FluentWindow.Resources>
+        <Style TargetType="{x:Type ui:Card}" BasedOn="{StaticResource {x:Type ui:Card}}">
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="Margin" Value="2" />
+            <Setter Property="Padding" Value="4" />
+        </Style>
+        <Style x:Key="CardBorder" TargetType="{x:Type Border}">
+            <Setter Property="Margin" Value="2" />
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="CornerRadius" Value="{DynamicResource ControlCornerRadius}" />
+            <Setter Property="BorderThickness" Value="{StaticResource CardBorderThemeThickness}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
+            <Setter Property="Background" Value="{DynamicResource CardBackground}" />
+        </Style>
+        <Style x:Key="TextBlockMargin" TargetType="{x:Type TextBlock}">
+            <Setter Property="Margin" Value="8" />
+            <Setter Property="TextAlignment" Value="Right" />
+        </Style>
+        <converters:UriToImageSourceConverter x:Key="UriImageConverter" />
+    </ui:FluentWindow.Resources>
+    <DockPanel Background="#11808080">
+        <ui:TitleBar DockPanel.Dock="Top" MaxHeight="30" Title="{Binding Title}">
+        </ui:TitleBar>
+        <StatusBar DockPanel.Dock="Bottom">
+            
+        </StatusBar>
+        <Grid Margin="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="4*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Border Style="{DynamicResource CardBorder}"  Grid.ColumnSpan="2">
+                <DockPanel>
+                    <ui:Button Content="모두 선택" Command="{Binding SelectAllCommand}" Margin="3" />
+                    <ui:Button Content="모두 해제" Command="{Binding DeselectAllCommand}" Margin="3" />
+                    <ui:Button DockPanel.Dock="Right" Appearance="Primary" Content="새로고침" Icon="{ui:SymbolIcon ArrowSync24, Filled=True}" Command="{Binding RefreshImagesCommand}" Margin="3" />
+                    <ui:TextBlock DockPanel.Dock="Left" VerticalAlignment="Center" Text="이미지 크기" FontTypography="Body" Margin="5,0,0,0"/>
+                    <Slider x:Name="SliderImageSize" DockPanel.Dock="Left" Width="100" Minimum="4" Maximum="10" Value="6" Margin="5" VerticalAlignment="Center" />
+                    <Separator DockPanel.Dock="Left" VerticalAlignment="Stretch" />
+                    <ui:TextBlock DockPanel.Dock="Left" VerticalAlignment="Center" Text="이미지 폴더" FontTypography="Body" Margin="5,0"/>
+                    <ui:Button Margin="3" DockPanel.Dock="Right" Content="폴더 선택" Icon="{ui:SymbolIcon Folder24}" Command="{Binding SelectFolderCommand}"/>
+                    <ui:TextBox Margin="3" Padding="5" Text="{Binding SelectedFolder, Mode=OneWay}" PlaceholderText="이미지 폴더를 선택해 주세요"/>
+                </DockPanel>
+            </Border>
+            <ui:ListView 
+                x:Name="ListViewImages"
+                Grid.Row="1"
+                ItemsSource="{Binding Images}" 
+                ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                <ListView.Resources>
+                    <ResourceDictionary>
+                        <Color x:Key="ControlStrongFillColorLight">#FFFFFF</Color>
+                    </ResourceDictionary>
+                </ListView.Resources>
+                <ListView.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="{Binding ElementName=SliderImageSize, Path=Value}" VerticalAlignment="Top"/>
+                    </ItemsPanelTemplate>
+                </ListView.ItemsPanel>
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ui:ListViewItem" BasedOn="{StaticResource {x:Type ui:ListViewItem}}">
+                        <Setter Property="Focusable" Value="false"/>
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.ItemTemplate>
+                    <DataTemplate DataType="models:CalibrationImage">
+                        <ui:Card 
+                            Margin="0" Padding="10"
+                            d:MaxWidth="200"
+                            Cursor="Hand"
+                            MouseLeftButtonDown="ItemCard_MouseLeftButton">
+                            <Grid>
+                                <ui:Image 
+                                    Source="{Binding ImageSource, Converter={StaticResource UriImageConverter}}" 
+                                    RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                                <ui:Button Appearance="Light" Padding="5" 
+                                           Icon="{ui:SymbolIcon ZoomIn16, Filled=True}"
+                                           FontSize="20"
+                                           HorizontalAlignment="Right" 
+                                           VerticalAlignment="Top" 
+                                           Click="ZoomButtonClick"/>
+                            </Grid>
+                            <ui:Card.Footer>
+                                <CheckBox IsChecked="{Binding Selected}"
+                                          IsEnabled="{Binding DetectionData.Success, 
+                                                      FallbackValue=False}">
+                                    <StackPanel Orientation="Vertical">
+                                        <ui:TextBlock Text="{Binding FileName}" FontTypography="BodyStrong" />
+                                        <ui:TextBlock 
+                                            FontTypography="Caption"
+                                            Visibility="{Binding DetectionData, Converter={converters:NullToVisibilityConverter}, FallbackValue=Hidden}">
+                                            <TextBlock.Text>
+                                                <MultiBinding StringFormat="Markers found: {0} / {1}">
+                                                    <Binding Path="DetectionData.ArucoMarkersFound"/>
+                                                    <Binding Path="DetectionData.ArucoMarkersExpected"/>
+                                                </MultiBinding>
+                                            </TextBlock.Text>
+                                        </ui:TextBlock>
+                                    </StackPanel>
+                                </CheckBox>
+                            </ui:Card.Footer>
+                            <ui:Card.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="삭제" Icon="{ui:SymbolIcon Delete24}" 
+                                              Command="{Binding Source={x:Reference ListViewImages}, Path=DataContext.DeleteImageCommand}"
+                                              CommandParameter="{Binding}"/>
+                                </ContextMenu>
+                            </ui:Card.ContextMenu>
+                        </ui:Card>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ui:ListView>
+            <ui:TextBlock 
+                Grid.Row="1" Margin="5" 
+                Text="폴더에 이미지가 없습니다." 
+                Visibility="{Binding Images.Count, Converter={converters:ZeroToVisibilityConverter}}"
+                FontTypography="Subtitle"
+                HorizontalAlignment="Center" 
+                VerticalAlignment="Center" />
+            <StackPanel Grid.Column="1" Grid.Row="1">
+                <Border Style="{DynamicResource CardBorder}" >
+                    <StackPanel Orientation="Vertical">
+                        <ui:TextBlock Text="Charuco params" FontTypography="Subtitle" Margin="5" />
+                        <controls:CharucoParamView DataContext="{Binding CharucoBoardConfig}" />
+                    </StackPanel>
+                </Border>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <ui:Button Grid.Column="0" Appearance="Primary" HorizontalAlignment="Stretch" Margin="3" Content="마커 인식" Command="{Binding DetectAllCommand}" />
+                    <ui:Button Grid.Column="1" Appearance="Light" HorizontalAlignment="Stretch" Margin="3" Content="초기화" Command="{Binding ResetCommand}"  />
+                    <ui:Button Grid.Row="1" Appearance="Secondary" HorizontalAlignment="Stretch" Content="폴더 열기" Icon="{ui:SymbolIcon FolderOpen24}" Command="{Binding OpenSelectedFolderCommand}" Margin="3" />
+                </Grid>
+                <!--<ui:Button Appearance="Primary" HorizontalAlignment="Stretch" Margin="3" Content="캘리브레이션" Command="{Binding CalibrateCommand}" />-->
+                <Border Style="{DynamicResource CardBorder}">
+                    <StackPanel>
+                        <ui:TextBlock Text="Reprojection Error" FontTypography="Subtitle" Margin="5" />
+                        <ui:TextBox Text="{Binding Result.ReprojectionError, StringFormat='{}{0:0.000000000000000000}'}" TextAlignment="Right" Margin="5" IsReadOnly="True" FontFamily="Monospace" />
+                        <ui:TextBlock Text="Camera Matrix" FontTypography="Subtitle" Margin="5" />
+                        <DataGrid
+                            ItemsSource="{Binding Result.CameraMatrix, Converter={converters:TwoDimArrayConverter}}" 
+                            Margin="5"
+                            AutoGenerateColumns="False" 
+                            HeadersVisibility="None" 
+                            HorizontalContentAlignment="Right" 
+                            MinHeight="110"
+                            IsHitTestVisible="False"
+                            Focusable="False"
+                            IsReadOnly="True" FrozenColumnCount="3">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Binding="{Binding [0], StringFormat='{}{0:0.000}'}" Width="*" ElementStyle="{StaticResource TextBlockMargin}" />
+                                <DataGridTextColumn Binding="{Binding [1], StringFormat='{}{0:0.000}'}" Width="*" ElementStyle="{StaticResource TextBlockMargin}" />
+                                <DataGridTextColumn Binding="{Binding [2], StringFormat='{}{0:0.000}'}" Width="*" ElementStyle="{StaticResource TextBlockMargin}" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                        <ui:TextBlock Text="Distortion Coefficients" FontTypography="Subtitle" Margin="5" />
+                        <DataGrid
+                            ItemsSource="{Binding Result.DistCoeffs, Converter={converters:ArrayTo2DArrayConverter}, Mode=OneWay}" 
+                            Margin="5"
+                            AutoGenerateColumns="False" 
+                            HeadersVisibility="None" 
+                            HorizontalContentAlignment="Right" 
+                            MinHeight="40"
+                            IsHitTestVisible="False"
+                            Focusable="False"
+                            IsReadOnly="True"
+                            FrozenColumnCount="3">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Binding="{Binding [0], StringFormat='{}{0:0.000}'}" Width="*" ElementStyle="{StaticResource TextBlockMargin}" />
+                                <DataGridTextColumn Binding="{Binding [1], StringFormat='{}{0:0.000}'}" Width="*" ElementStyle="{StaticResource TextBlockMargin}" />
+                                <DataGridTextColumn Binding="{Binding [2], StringFormat='{}{0:0.000}'}" Width="*" ElementStyle="{StaticResource TextBlockMargin}" />
+                                <DataGridTextColumn Binding="{Binding [3], StringFormat='{}{0:0.000}'}" Width="*" ElementStyle="{StaticResource TextBlockMargin}" />
+                                <DataGridTextColumn Binding="{Binding [4], StringFormat='{}{0:0.000}'}" Width="*" ElementStyle="{StaticResource TextBlockMargin}" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <ui:Button 
+                                Appearance="Primary" 
+                                FontSize="16"
+                                Icon="{ui:SymbolIcon Save24}"
+                                Command="{Binding SaveParamsCommand}"
+                                HorizontalAlignment="Stretch" Margin="5" >
+                                <ui:TextBlock Text="Save" />
+                            </ui:Button>
+                            <ui:Button 
+                                x:Name="ButtonSaveAs"
+                                Grid.Column="1" 
+                                FontSize="16"
+                                Icon="{ui:SymbolIcon SaveArrowRight24}"
+                                Command="{Binding SaveParamsAsCommand}"
+                                Appearance="Primary" 
+                                HorizontalAlignment="Stretch" Margin="5">
+                                <ui:TextBlock Text="Save as..." />
+                            </ui:Button>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Grid>
+    </DockPanel>
+</ui:FluentWindow>
